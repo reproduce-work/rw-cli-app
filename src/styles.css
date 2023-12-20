@@ -1,0 +1,49 @@
+#rw-footer {
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    background-color: #333;
+    color: white;
+    padding: 2px 2px;
+    font-size: 12px;
+    z-index: 1000;
+}
+
+#footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#metadata-menu {
+    display: none;
+    position: absolute;
+    bottom: 23px; /* Adjust the distance from the button as needed */
+    left: 0;
+    background-color: #333;
+    color: white;
+    padding: 10px;
+    z-index: 1000;
+    border: black 2px solid;
+}
+
+#toggle-metadata {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+#toggle-metadata img {
+    height: 15px; /* Adjust as per your icon size */
+    width: auto;
+}
+
+#metadata-list {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+#dynamic-messages {
+    /* Style as needed */
+}
