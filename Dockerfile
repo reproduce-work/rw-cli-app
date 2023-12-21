@@ -1,5 +1,8 @@
 FROM nginx:latest
 
+
+#RUN touch /docker-entrypoint.sh
+
 # Copy Nginx configuration file
 COPY nginx.conf /etc/nginx/nginx.conf
 
