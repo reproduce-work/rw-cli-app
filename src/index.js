@@ -1,3 +1,5 @@
+const {start, stop} = require('./llm.js');
+
 document.addEventListener('DOMContentLoaded', (event) => {
     // Create the rw-wrapper div if it doesn't exist
     let wrapperDiv = document.getElementById('rw-wrapper');
@@ -24,3 +26,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             });
         });
 });
+
+
+start();
