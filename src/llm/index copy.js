@@ -1,4 +1,6 @@
 let devMode = true;
+let currentTabListener = null;
+let currentFocusedInput = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize and append the footer
@@ -8,6 +10,20 @@ document.addEventListener('DOMContentLoaded', () => {
     setupActiveMode();
     setupInputFields();
 });
+
+
+function setupMetadataToggle() {
+    const toggleButton = document.getElementById('toggle-metadata');
+    if (toggleButton) {
+        toggleButton.addEventListener('click', () => {
+            const metadataMenu = document.getElementById('metadata-menu');
+            if (metadataMenu) {
+                metadataMenu.style.display = metadataMenu.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+    }
+}
+
 
 function initializeFooter() {
     let wrapperDiv = document.getElementById('rw-wrapper');
@@ -29,17 +45,6 @@ function initializeFooter() {
         }).catch(error => console.error('Error loading footer:', error));
 }
 
-function setupMetadataToggle() {
-    const toggleButton = document.getElementById('toggle-metadata');
-    if (toggleButton) {
-        toggleButton.addEventListener('click', () => {
-            const metadataMenu = document.getElementById('metadata-menu');
-            if (metadataMenu) {
-                metadataMenu.style.display = metadataMenu.style.display === 'none' ? 'block' : 'none';
-            }
-        });
-    }
-}
 
 let activeMode = false;
 let timeoutId;
@@ -150,41 +155,93 @@ function getCaretPosition(inputField) {
     }
 }
 
-function displayCompletion(newText, inputField) {
-    if (inputField.tagName.toLowerCase() === 'textarea') {
-        inputField.value = newText;
-    } else {
-        inputField.innerText = newText;
-    }
-}
 
-// Add focus tracking for both textareas and contenteditable elements
+// Modify focus tracking to include input[type="text"]
 document.addEventListener('focusin', event => {
-    if (event.target.tagName.toLowerCase() === 'textarea' || event.target.getAttribute('contenteditable') === 'true') {
+    if (event.target.tagName.toLowerCase() === 'textarea' ||
+        event.target.tagName.toLowerCase() === 'input' ||
+        event.target.getAttribute('contenteditable') === 'true') {
+
         event.target.isFocused = true;
+        currentFocusedInput = event.target;
     }
 });
 
 document.addEventListener('focusout', event => {
-    if (event.target.tagName.toLowerCase() === 'textarea' || event.target.getAttribute('contenteditable') === 'true') {
+    if (event.target.tagName.toLowerCase() === 'textarea' ||
+        event.target.tagName.toLowerCase() === 'input' ||
+        event.target.getAttribute('contenteditable') === 'true') {
+
         event.target.isFocused = false;
+        
+        if (currentFocusedInput === event.target && currentTabListener) {
+            document.removeEventListener('keydown', currentTabListener);
+            currentTabListener = null;
+        }
+        currentFocusedInput = null;
     }
 });
 
 
-async function getCompletion(Field, Text,  position) {
 
+// Function to display the completion preview
+function displayCompletion(newText, inputField, position) {
+    const previewSpan = document.createElement('span');
+    previewSpan.id = 'completion-preview';
+    previewSpan.style.opacity = '0.6';
+    previewSpan.textContent = newText;
+
+    insertAtCaret(inputField, previewSpan, position);
+}
+
+// Function to insert an element at the caret position
+function insertAtCaret(inputField, element, position) {
+    if (inputField.tagName.toLowerCase() === 'textarea' || inputField.tagName.toLowerCase() === 'input') {
+        // For textareas and inputs, you may need a different approach
+        // as they do not support direct HTML insertion
+    } else if (inputField.getAttribute('contenteditable') === 'true') {
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.setStart(inputField.firstChild, position);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        range.insertNode(element);
+    }
+}
+
+
+// Function to get the completion text asynchronously
+async function getCompletion(Field, Text, position, show_preview = true) {
     const { prefix, suffix } = getContext(Text, position);
     const prompt = `<PRE> ${prefix} <SUF> ${suffix} <MID>`;
 
     console.log('Prompt:', prompt);
-    const completions = ["completion1", "completion2"]; // Mocked completions for now
-    const completedText = insertCompletion(Field, position, completions[0]);
+    const completions = ['completion1', "completion2"]; // Mocked completions for now
+    
+    // Function to get the text with the completion inserted at the specified position
+    function getCompletedText(text, position, completion) {
+        // wrap completions in <span id="testCOMPLETION" style="opacity: 0.6;">completion</span>
+
+        // detect Field type and insert completion accordingly
+        if (Field.tagName.toLowerCase() === 'textarea' || Field.tagName.toLowerCase() === 'input') {
+            return text.substring(0, position) + completion + text.substring(position);
+        }
+        else {
+            return text.substring(0, position) + `<span id="testCOMPLETION" style="opacity: 0.6;">${completion}</span>` + text.substring(position);
+        }
+
+    }
+
+    
+    const completedText = show_preview ? getCompletedText(Text, position, completions[0]) : '';
+    setupCompletionInsertion(Field, position, completedText);
     return completedText;
 }
 
+// Function to get the context around the caret position
 function getContext(text, position) {
-    const contextRadius = 50;
+    const contextRadius = 100;
     const start = Math.max(0, position - contextRadius);
     const end = Math.min(text.length, position + contextRadius);
     return {
@@ -194,61 +251,81 @@ function getContext(text, position) {
 }
 
 
-
-function insertCompletion(inputField, position, completion) {
+// Function to setup the completion insertion on Tab key press
+function setupCompletionInsertion(inputField, position, completion) {
     if (!inputField || !(inputField instanceof Element)) {
         console.error('Invalid input field');
         return;
     }
 
-    if (inputField.tagName.toLowerCase() === 'textarea') {
-        // For textarea
+    if (currentTabListener) {
+        document.removeEventListener('keydown', currentTabListener);
+        currentTabListener = null;
+    }
+
+    currentTabListener = function(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            finalizeCompletion(inputField, position, completion);
+        }
+    };
+
+    document.addEventListener('keydown', currentTabListener);
+}
+
+// Function to finalize the completion by setting the opacity to full
+function finalizeCompletion(inputField, position, completion) {
+    const previewSpan = document.getElementById('completion-preview');
+    if (previewSpan) {
+        previewSpan.style.opacity = '1'; // Set opacity to full
+
+        // Move the cursor to the end of the completion
+        const newPosition = position + completion.length;
+        if (inputField.tagName.toLowerCase() === 'textarea' || inputField.tagName.toLowerCase() === 'input') {
+            inputField.selectionStart = inputField.selectionEnd = newPosition;
+        } else if (inputField.getAttribute('contenteditable') === 'true') {
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.setStartAfter(previewSpan);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    }
+}
+
+/*
+// Function to insert the completion into the input field
+function insertCompletion(inputField, position, completion) {
+    if (inputField.tagName.toLowerCase() === 'textarea' || inputField.tagName.toLowerCase() === 'input') {
+        const newPosition = position + completion.length;
         inputField.value = inputField.value.substring(0, position) + completion + inputField.value.substring(position);
-
-        // set the cursor to the end of the completion
-        inputField.selectionStart = position;
-        inputField.selectionEnd = position + completion.length;
-
-        
-
+        inputField.selectionStart = inputField.selectionEnd = newPosition;
     } else if (inputField.getAttribute('contenteditable') === 'true') {
-        // For contenteditable
-        const range = document.createRange();
         const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
 
-        const { node, offset } = getNodeAtPosition(inputField, position);
-        if (!node) {
-            console.error('Could not find the node at the specified position');
-            return;
+        // For HTML completion, create a temporary element to parse the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = completion;
+        const fragment = document.createDocumentFragment();
+        while (tempDiv.firstChild) {
+            fragment.appendChild(tempDiv.firstChild);
         }
 
-        range.setStart(node, offset);
-        range.collapse(true);
+        range.insertNode(fragment);
 
-        const span = document.createElement('span');
-        span.className = 'gen-ai-completion';
-        span.textContent = completion;
-
-        range.deleteContents();
-        range.insertNode(span);
-
-        // Move the caret to the end of the completion
-        range.setStartAfter(span);
+        // Move the caret to the end of the inserted content
+        range.setStartAfter(fragment.lastChild);
         range.collapse(true);
         sel.removeAllRanges();
         sel.addRange(range);
-
-        // set the cursor to the end of the completion
-        const range2 = document.createRange();
-        range2.selectNodeContents(span);
-        range2.collapse(false);
-        sel.removeAllRanges();
-        sel.addRange(range2);
-        
     }
-
-    return inputField.tagName.toLowerCase() === 'textarea' ? inputField.value : inputField.innerText;
 }
+*/
 
 function getNodeAtPosition(root, position) {
     let node;
