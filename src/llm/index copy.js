@@ -294,39 +294,6 @@ function finalizeCompletion(inputField, position, completion) {
     }
 }
 
-/*
-// Function to insert the completion into the input field
-function insertCompletion(inputField, position, completion) {
-    if (inputField.tagName.toLowerCase() === 'textarea' || inputField.tagName.toLowerCase() === 'input') {
-        const newPosition = position + completion.length;
-        inputField.value = inputField.value.substring(0, position) + completion + inputField.value.substring(position);
-        inputField.selectionStart = inputField.selectionEnd = newPosition;
-    } else if (inputField.getAttribute('contenteditable') === 'true') {
-        const sel = window.getSelection();
-        if (!sel.rangeCount) return;
-        
-        const range = sel.getRangeAt(0);
-        range.deleteContents();
-
-        // For HTML completion, create a temporary element to parse the HTML
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = completion;
-        const fragment = document.createDocumentFragment();
-        while (tempDiv.firstChild) {
-            fragment.appendChild(tempDiv.firstChild);
-        }
-
-        range.insertNode(fragment);
-
-        // Move the caret to the end of the inserted content
-        range.setStartAfter(fragment.lastChild);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
-    }
-}
-*/
-
 function getNodeAtPosition(root, position) {
     let node;
     let offset = 0;
