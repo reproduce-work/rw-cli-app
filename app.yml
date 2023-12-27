@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  rw-proxy:
+    image: rw-cli-app:local
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/usr/share/nginx/_rwproj/
+    depends_on:
+      - rw-target
+    networks:
+      - rw_network
+
+  rw-target:
+    image: rw-lqh76ogn
+    ports:
+      - "$RW_SCIENV_LOCAL_PORT:$RW_SCIENV_IMAGE_PORT"
+    volumes:
+      - ../:$RW_SCIENV_VOLUME
+    networks:
+      - rw_network
+
+networks:
+    rw_network:

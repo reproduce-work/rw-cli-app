@@ -1,0 +1,12 @@
+FROM nginx:latest
+
+# Create directories for your static files
+RUN mkdir -p /usr/share/nginx/_rw /usr/share/nginx/_rwapp /usr/share/nginx/_rwproj
+
+# Copy Nginx configuration file
+COPY nginx.conf /etc/nginx/nginx.conf
+
+
+# Copy additional static assets
+COPY public/_rw/ /usr/share/nginx/_rw/
+COPY dist /usr/share/nginx/_rwapp/

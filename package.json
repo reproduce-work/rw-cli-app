@@ -1,0 +1,29 @@
+{
+    "name": "reproduce.work-cli-app-server",
+    "type": "module",
+    "version": "0.0.1",
+    "description": "Wrapper for the reproduce.work container environments",
+    
+    "main": "dist/bundle.js",
+    "scripts": {
+        "start": "webpack serve --open --mode development",
+        "build": "babel src -d lib && webpack --mode production"
+    },
+    "dependencies": {
+        "@iarna/toml": "^2.2.5"
+    },
+    "devDependencies": {
+        "webpack": "^5.89.0",
+        "webpack-cli": "^5.1.4",
+        "babel-loader": "^8.2.2",
+        "@babel/core": "^7.23.0",
+        "@babel/cli": "^7.23",
+        "@babel/preset-env": "^7.23.0",
+        "stream-browserify": "3.0.0"
+    },
+    "babel": {
+        "presets": ["@babel/preset-env"]
+      },
+    "author": "Alex",
+    "license": "MIT"
+}

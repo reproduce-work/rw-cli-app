@@ -47,3 +47,17 @@
 #dynamic-messages {
     /* Style as needed */
 }
+
+
+
+#rw-footer  #right-footer {
+    text-align: right;
+}
+
+#rw-footer  #right-footer .inner {
+     /* Display these elements inline or as inline-blocks */
+     display: inline-block;
+
+     /* Optional: Add some spacing between items */
+     margin-left: 10px;
+}
